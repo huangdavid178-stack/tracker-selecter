@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPS Tracker 客户选型工具</title>
+<style>
+  :root{
+    --green:#1F6F3F; --green-l:#EAF3EA; --green-b:#C9E0CD;
+    --amber:#B7791F; --amber-l:#FFF6E5;
+    --grey:#6B7280; --line:#E5E7EB; --ink:#111827;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#F6F8F7;color:var(--ink);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  header{background:linear-gradient(135deg,#1F6F3F,#2E8B57);color:#fff;padding:26px 32px 22px;}
+  header h1{margin:0;font-size:22px;letter-spacing:.3px}
+  header p{margin:6px 0 0;font-size:13px;opacity:.9}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;padding:20px 24px 60px;max-width:1360px;margin:0 auto;align-items:start}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .group{margin-bottom:22px}
+  .group:last-child{margin-bottom:4px}
+  .group h2{font-size:13px;margin:0 0 10px;color:var(--green);letter-spacing:.5px;
+            display:flex;align-items:center;gap:8px}
+  .group h2 .num{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--green);
+                 color:#fff;font-size:11px;align-items:center;justify-content:center;font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:13px;
+        cursor:pointer;user-select:none;transition:.15s;color:#374151}
+  .chip:hover{border-color:var(--green-b);background:#F4FAF5}
+  .chip.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:500}
+  .chip small{display:block;font-size:10.5px;opacity:.72;font-weight:400;margin-top:1px}
+  .chip.on small{opacity:.85}
+  .hint{font-size:11.5px;color:var(--grey);margin:8px 0 0;line-height:1.5}
+
+  .result{position:sticky;top:16px}
+  .rlabel{font-size:11px;letter-spacing:1px;color:var(--grey);text-transform:uppercase}
+  .rname{font-size:30px;font-weight:700;color:var(--green);margin:4px 0 2px;line-height:1.1}
+  .rsub{font-size:12.5px;color:var(--grey);margin-bottom:14px}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 4px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#2E8B57,#7BC47F);border-radius:99px;transition:width .3s}
+  .score{font-size:11px;color:var(--grey);text-align:right}
+  .sec-t{font-size:12px;font-weight:600;margin:16px 0 7px;color:#111827}
+  ul.pts{margin:0;padding:0;list-style:none;font-size:12.5px;line-height:1.55}
+  ul.pts li{padding-left:18px;position:relative;margin-bottom:5px;color:#374151}
+  ul.pts li.ok:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+  ul.pts li.warn:before{content:"!";position:absolute;left:0;color:var(--amber);font-weight:700}
+  ul.pts li.none{color:#9CA3AF}
+  ul.pts li.none:before{content:"–";position:absolute;left:0;color:#9CA3AF}
+  .warnbox{background:var(--amber-l);border:1px solid #F0DDB4;border-radius:8px;padding:10px 12px;
+           font-size:12px;color:#7A5310;line-height:1.55;margin:10px 0}
+  .spec{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+  .spec td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+  .spec td:first-child{color:var(--grey);width:78px}
+  .alts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .alt{border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;background:#fff;white-space:nowrap}
+  .alt:hover{border-color:var(--green-b);background:#F4FAF5}
+  .alt b{color:var(--green)}
+  .alt span{color:var(--grey);font-size:10.5px;margin-left:4px}
+  .btns{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  button.act{border:1px solid var(--green);background:var(--green);color:#fff;border-radius:8px;
+             padding:8px 13px;font-size:12.5px;cursor:pointer}
+  button.act.ghost{background:#fff;color:var(--green)}
+  button.act:hover{opacity:.9}
+  details.all{margin:0 24px 40px;max-width:1312px}
+  details.all summary{cursor:pointer;font-size:13px;color:var(--green);padding:10px 0}
+  table.cmp{width:100%;border-collapse:collapse;font-size:11.5px;background:#fff}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  table.cmp th{background:var(--green-l);color:#14532D;font-weight:600;white-space:nowrap}
+  table.cmp tr:nth-child(even) td{background:#FCFDFC}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;
+         padding:9px 16px;border-radius:8px;font-size:12.5px;opacity:0;pointer-events:none;transition:.25s}
+  .toast.on{opacity:.95}
+  @media(max-width:1000px){
+    .layout{grid-template-columns:1fr;padding:16px}
+    .result{position:static}
+  }
+  @media print{
+    body{background:#fff}
+    header{background:#fff;color:#111827;border-bottom:2px solid var(--green);padding:0 0 10px}
+    .btns,.toast{display:none}
+    .layout{display:block;padding:0}
+    .panel{border:none;padding:0 0 10px}
+    .result{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>GPS Tracker 客户选型工具</h1>
+  <p>勾选客户需求，实时匹配最合适的型号 · 参数依据 13 份产品规格书 V1.0（2024.12）</p>
+</header>
+
+<div class="layout">
+  <section class="panel form">
+    <div class="group">
+      <h2><span class="num">1</span>安装与供电方式</h2>
+      <div class="chips" data-type="install">
+        <div class="chip on" data-v="any">不限<small>由客户条件决定</small></div>
+        <div class="chip" data-v="wired">接车电（有线）<small>需破线安装，持续供电</small></div>
+        <div class="chip" data-v="battery">免安装·自带电池<small>磁吸/粘贴，锂电</small></div>
+        <div class="chip" data-v="dry">干电池·可更换<small>免维护 2~3 年</small></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">2</span>客户应用场景（可多选）</h2>
+      <div class="chips" data-type="scenarios" data-multi="1">
+        <div class="chip" data-v="finance">汽车金融/租赁风控</div>
+        <div class="chip" data-v="fleet">车队管理</div>
+        <div class="chip" data-v="asset">集装箱/大宗资产</div>
+        <div class="chip" data-v="bike">两轮车/小件资产</div>
+        <div class="chip" data-v="sos">营运车/人员 SOS</div>
+        <div class="chip" data-v="cost">低成本批量</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">3</span>期望免充电时长</h2>
+      <div class="chips" data-type="standby">
+        <div class="chip" data-v="m1">1 个月左右</div>
+        <div class="chip" data-v="m3">2~3 个月</div>
+        <div class="chip on" data-v="m6">半年左右</div>
+        <div class="chip" data-v="y1">1 年以上</div>
+        <div class="chip" data-v="y3">2~3 年（只定时上报）</div>
+      </div>
+      <p class="hint">按电池容量等级匹配；实际待机天数与上报间隔强相关，正式报价前建议提供测试数据。</p>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">4</span>功能需求（可多选）</h2>
+      <div class="chips" data-type="funcs" data-multi="1">
+        <div class="chip" data-v="tamper">拆机报警（防拆）</div>
+        <div class="chip" data-v="realtime">实时追踪（震动唤醒）</div>
+        <div class="chip" data-v="wifi">WiFi 辅助定位</div>
+        <div class="chip" data-v="relay">远程断油断电</div>
+        <div class="chip" data-v="acc">ACC 点火检测</div>
+        <div class="chip" data-v="sos">SOS 一键报警</div>
+        <div class="chip" data-v="mic">语音监听（MIC）</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">5</span>安装空间</h2>
+      <div class="chips" data-type="size">
+        <div class="chip on" data-v="normal">常规即可</div>
+        <div class="chip" data-v="tiny">越小越好（&lt;60mm）</div>
+        <div class="chip" data-v="large">空间充足，优先大电池</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">6</span>出口/使用区域</h2>
+      <div class="chips" data-type="region">
+        <div class="chip on" data-v="cn">国内<small>B1/3/5/8 + TDD</small></div>
+        <div class="chip" data-v="eu">欧洲<small>需 B20</small></div>
+        <div class="chip" data-v="us">美洲<small>需 B4/B28/B66</small></div>
+        <div class="chip" data-v="me">中东/非洲<small>B3/B7/B20</small></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2><span class="num">7</span>成本取向</h2>
+      <div class="chips" data-type="cost">
+        <div class="chip" data-v="low">低成本优先</div>
+        <div class="chip on" data-v="balance">性价比均衡</div>
+        <div class="chip" data-v="performance">性能/待机优先</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel result" id="result">
+    <div class="rlabel">推荐型号</div>
+    <div class="rname" id="rName">—</div>
+    <div class="rsub" id="rSub"></div>
+    <div class="bar"><i id="rBar" style="width:0%"></i></div>
+    <div class="score" id="rScore"></div>
+
+    <div id="rWarn"></div>
+
+    <div class="sec-t">匹配要点</div>
+    <ul class="pts" id="rHits"></ul>
+
+    <div class="sec-t">需注意</div>
+    <ul class="pts" id="rGaps"></ul>
+
+    <div class="sec-t">关键参数</div>
+    <table class="spec" id="rSpec"></table>
+
+    <div class="sec-t">备选方案</div>
+    <div class="alts" id="rAlts"></div>
+
+    <div class="btns">
+      <button class="act" id="btnCopy">复制中文结论</button>
+      <button class="act ghost" id="btnCopyEn">Copy EN summary</button>
+      <button class="act ghost" id="btnReset">重置</button>
+    </div>
+  </aside>
+</div>
+
+<details class="all">
+  <summary>查看 13 款型号参数速查表</summary>
+  <div id="cmpWrap"></div>
+</details>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+/* GPS Tracker 选型引擎 —— 依据 13 份产品规格书参数构建
+   字段含义：
+   type: battery(自带锂电) / dry(干电池) / wired(车载有线)
+   capTier: 待机容量等级 1=800mAh 2=3000 3=6000 4=7800 5=20000(dry 干电池3年)
+   sizeClass: tiny / normal / large
+   regions: 2=频段完整 1=部分可用 0=不可用
+   mic: false / 'export'(仅出口支持)
+*/
+var MODELS = [
+  { id:'4G20', name:'4G20', type:'battery', cap:'800mAh', capTier:1, sizeClass:'tiny', maxDim:55.8,
+    dims:'55.8×35×22mm', wifi:true, tamper:false, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'无光感，拆机报警不可用' },
+  { id:'4G20B', name:'4G20B', type:'battery', cap:'3000mAh', capTier:2, sizeClass:'normal', maxDim:79.6,
+    dims:'79.6×50×22.4mm', wifi:true, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'' },
+  { id:'4G20A', name:'4G20A', type:'battery', cap:'6000mAh', capTier:3, sizeClass:'normal', maxDim:82,
+    dims:'82×51.3×29mm', wifi:true, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'' },
+  { id:'4G20D', name:'4G20D', type:'battery', cap:'7800mAh', capTier:4, sizeClass:'normal', maxDim:91,
+    dims:'91×56×31mm', wifi:true, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'' },
+  { id:'4G20S', name:'4G20S', type:'battery', cap:'20000mAh', capTier:5, sizeClass:'normal', maxDim:78,
+    dims:'78×50.5×33.5mm', wifi:true, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'规格书正文与文件名容量不一致（20000/10000mAh），需确认' },
+  { id:'4G20SS', name:'4G20SS', type:'battery', cap:'20000mAh', capTier:5, sizeClass:'large', maxDim:133.5,
+    dims:'133.5×65×32mm', wifi:true, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'与 4G20S 参数高度重合，仅外壳更大' },
+  { id:'G05', name:'G05', type:'dry', cap:'4200mAh 干电池', capTier:5, sizeClass:'normal', maxDim:85,
+    dims:'85×50×32mm', wifi:false, tamper:true, vib:false, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:2,us:2,me:2}, proto:'UDP', rate:1,
+    bands:'CA/EA/LA 模块可选（国内/欧洲/美洲频段）', note:'一天一次模式 3 年；无震动传感器、1Hz，不适合实时追踪',
+    dry:true },
+  { id:'G05A', name:'G05A', type:'battery', cap:'6000mAh', capTier:3, sizeClass:'normal', maxDim:82,
+    dims:'82×50×32mm', wifi:false, tamper:true, vib:true, relay:false, acc:false, sos:false, mic:false,
+    regions:{cn:2,eu:2,us:2,me:2}, proto:'TCP', rate:5,
+    bands:'CA/EA/LA 模块可选（国内/欧洲/美洲频段）', note:'无 WiFi 定位' },
+  { id:'G02H', name:'G02H', type:'wired', cap:'55mAh 备份', capTier:0, sizeClass:'normal', maxDim:72.3,
+    dims:'72.3×31×12.3mm', wifi:false, tamper:false, vib:true, relay:true, acc:true, sos:false, mic:false,
+    regions:{cn:1,eu:1,us:1,me:1}, proto:'TCP', rate:5,
+    bands:'GPRS 850/900/1800/1900（文档另写 CAT1，需确认）', note:'文档网络制式不一致，需确认 4G/2G 版本' },
+  { id:'G02S', name:'G02S', type:'wired', cap:'55mAh 备份', capTier:0, sizeClass:'normal', maxDim:72.3,
+    dims:'72.3×31×12.3mm', wifi:false, tamper:false, vib:true, relay:true, acc:true, sos:true, mic:'export',
+    regions:{cn:1,eu:1,us:1,me:1}, proto:'TCP', rate:5,
+    bands:'GPRS 850/900/1800/1900（文档另写 CAT1，需确认）', note:'8 线版本；MIC 仅国外支持' },
+  { id:'GX02H-GX', name:'GX02H-GX', type:'wired', cap:'55mAh 备份', capTier:0, sizeClass:'normal', maxDim:80,
+    dims:'80×37×15.4mm', wifi:true, tamper:false, vib:true, relay:true, acc:true, sos:false, mic:false,
+    regions:{cn:2,eu:1,us:0,me:1}, proto:'TCP', rate:5,
+    bands:'4G CAT1；FDD B1/B3/B5/B8；TDD B34/38/39/40/41', note:'国内版 4G 全频段' },
+  { id:'GX02H-LA', name:'GX02H-LA(B4)', type:'wired', cap:'55mAh 备份', capTier:0, sizeClass:'normal', maxDim:80,
+    dims:'80×37×15.4mm', wifi:true, tamper:false, vib:true, relay:true, acc:true, sos:false, mic:false,
+    regions:{cn:1,eu:1,us:2,me:1}, proto:'TCP', rate:5,
+    bands:'4G CAT1；B1/B3/B4/B7/B8/B28/B66', note:'美洲/中东版本' },
+  { id:'GX02H-EC', name:'GX02H-EC', type:'wired', cap:'55mAh 备份', capTier:0, sizeClass:'normal', maxDim:80,
+    dims:'80×37×15.4mm', wifi:true, tamper:false, vib:true, relay:true, acc:true, sos:false, mic:false,
+    regions:{cn:1,eu:2,us:1,me:2}, proto:'TCP', rate:5,
+    bands:'4G CAT1；B1/B3/B4/B7/B8/B20/B66', note:'欧洲版；定位仅 GPS/BDS（无 GLONASS）' }
+];
+
+var NEED_TIER = { m1:1, m3:2, m6:3, y1:4 };
+
+function regionLabel(r){ return {cn:'国内',eu:'欧洲',us:'美洲',me:'中东/非洲'}[r] || r; }
+
+function scoreModel(m, a){
+  var hits = [], gaps = [], hard = [], s = 50;
+
+  // —— 硬性条件 ——
+  if (a.install === 'wired' && m.type !== 'wired') hard.push('需要接车电（有线供电）');
+  if (a.install === 'battery' && m.type === 'wired') hard.push('要求免安装、自带电池');
+  if (a.install === 'dry' && !m.dry) hard.push('要求可更换干电池');
+  if (a.relay && !m.relay) hard.push('需要远程断油断电');
+  if (a.acc && !m.acc) hard.push('需要 ACC 点火检测');
+  if (a.sos && !m.sos) hard.push('需要 SOS 一键报警');
+  if (a.mic && !m.mic) hard.push('需要语音监听');
+  if (a.region && m.regions[a.region] === 0) hard.push('频段不覆盖' + regionLabel(a.region) + '运营商');
+  if (!m.regions[a.region]) hard.push('频段不覆盖' + regionLabel(a.region));
+
+  // —— 待机能力 ——
+  if (a.standby === 'y3') {
+    if (m.dry) { s += 26; hits.push('干电池 + 一天一次模式：文档标注可用 3 年'); }
+    else if (m.capTier >= 5) { s += 8; hits.push('20000mAh 大容量，可支撑长周期'); gaps.push('文档未给出 2~3 年免维护的实测数据'); }
+    else { s -= 14; gaps.push('待机达不到 2~3 年免维护'); }
+  } else if (a.standby && NEED_TIER[a.standby]) {
+    if (m.type === 'wired') { /* 车载取电，待机由车辆决定 */ }
+    else {
+      var need = NEED_TIER[a.standby], diff = m.capTier - need;
+      if (diff === 0) { s += 12; hits.push('电池容量与期望待机时长刚好匹配'); }
+      else if (diff > 0) { s += Math.max(2, 12 - diff * 3); hits.push('电池容量高于需求，待机更充裕'); gaps.push('容量偏大，成本会比够用型号高'); }
+      else { s += diff * 9; gaps.push('容量偏小，可能达不到期望待机时长'); }
+    }
+  }
+
+  // —— 功能偏好 ——
+  if (a.wifi) { if (m.wifi) { s += 9; hits.push('支持 WiFi 辅助定位（室内/城市峡谷更准）'); } else { s -= 12; gaps.push('不支持 WiFi 辅助定位'); } }
+  if (a.tamper) {
+    if (m.tamper) { s += 11; hits.push('支持光感拆机报警'); }
+    else { s -= 14; gaps.push('不支持拆机报警'); }
+  }
+  if (a.realtime) {
+    if (m.vib) { s += 7; hits.push('震动唤醒 + 运动上报，可做实时追踪'); }
+    else { s -= 13; gaps.push('无震动传感器，不能做实时追踪'); }
+    if (m.rate >= 5) { s += 2; } else { s -= 5; gaps.push('定位更新率 1Hz，轨迹较粗'); }
+  } else if (m.dry) {
+    s += 3;
+  }
+
+  // —— 体积 ——
+  if (a.size === 'tiny') {
+    if (m.maxDim <= 60) { s += 9; hits.push('超小体积，便于隐蔽安装'); }
+    else if (m.maxDim <= 85) { s += 0; gaps.push('体积略大于超小需求'); }
+    else { s -= 9; gaps.push('体积偏大，不便隐蔽安装'); }
+  } else if (a.size === 'large') {
+    if (m.capTier >= 5) { s += 4; }
+  }
+
+  // —— 成本取向 ——
+  if (a.cost === 'low') {
+    if (m.capTier <= 1) { s += 7; hits.push('入门容量，成本最优'); }
+    else if (m.capTier === 2) { s += 3; }
+    else if (m.capTier >= 4) { s -= 7; gaps.push('大容量型号，成本偏高'); }
+  } else if (a.cost === 'performance') {
+    if (m.capTier >= 4) { s += 5; }
+  }
+
+  // —— 场景 ——
+  var sc = a.scenarios || [];
+  if (sc.indexOf('finance') >= 0) {
+    if (m.tamper && m.capTier >= 3) { s += 9; hits.push('拆机报警 + 长待机，适合金融风控'); }
+    else if (m.tamper) { s += 3; }
+  }
+  if (sc.indexOf('fleet') >= 0) { if (m.relay && m.acc) { s += 9; hits.push('支持 ACC + 断油断电，适合车队管理'); } }
+  if (sc.indexOf('asset') >= 0) { if (m.capTier >= 5) { s += 10; hits.push('超大容量，适合长期资产追踪'); } else if (m.capTier >= 4) { s += 4; } }
+  if (sc.indexOf('bike') >= 0) { if (m.maxDim <= 60) { s += 9; hits.push('体积小，适合两轮车/小件'); } else if (m.capTier <= 2) { s += 4; } }
+  if (sc.indexOf('sos') >= 0) { if (m.sos) { s += 9; hits.push('带 SOS 一键报警'); } }
+  if (sc.indexOf('cost') >= 0) { if (m.capTier <= 2) { s += 6; } }
+
+  // —— 频段匹配 ——
+  var rg = m.regions[a.region];
+  if (rg === 2) { s += 7; hits.push(regionLabel(a.region) + '频段完整支持'); }
+  else if (rg === 1) { s += 0; gaps.push(regionLabel(a.region) + '频段仅部分覆盖，需确认运营商'); }
+
+  // —— 已知文档风险 ——
+  if (/需确认/.test(m.note || '')) { gaps.push(m.note); }
+
+  s -= hard.length * 45;
+  if (hard.length === 0) s += 10;
+
+  return { model:m, score:s, hits:hits, gaps:gaps, hard:hard };
+}
+
+function recommend(a){
+  var res = MODELS.map(function(m){ return scoreModel(m, a); });
+  res.sort(function(x, y){ return y.score - x.score; });
+  var feasible = res.filter(function(r){ return r.hard.length === 0; });
+  var list = feasible.length ? feasible : res;
+  return {
+    best: list[0],
+    alts: list.slice(1, 3),
+    noPerfect: feasible.length === 0,
+    all: res
+  };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { MODELS: MODELS, recommend: recommend, scoreModel: scoreModel };
+}
+
+
+var LABELS = {
+  install:{any:'不限',wired:'接车电（有线）',battery:'免安装自带电池',dry:'干电池可更换'},
+  standby:{m1:'1个月左右',m3:'2~3个月',m6:'半年左右',y1:'1年以上',y3:'2~3年只定时上报'},
+  region:{cn:'国内',eu:'欧洲',us:'美洲',me:'中东/非洲'},
+  cost:{low:'低成本优先',balance:'性价比均衡',performance:'性能优先'},
+  size:{normal:'常规尺寸',tiny:'超小体积',large:'空间充足'},
+  scenario:{finance:'汽车金融/租赁风控',fleet:'车队管理',asset:'集装箱/大宗资产',bike:'两轮车/小件资产',sos:'营运车/人员SOS',cost:'低成本批量'},
+  func:{tamper:'拆机报警',realtime:'实时追踪',wifi:'WiFi辅助定位',relay:'断油断电',acc:'ACC点火检测',sos:'SOS一键报警',mic:'语音监听'}
+};
+var TYPE_CN = {battery:'自带锂电 · 免安装', dry:'干电池 · 超长待机', wired:'车载有线 · 9~90VDC'};
+
+var state = {
+  install:'any', scenarios:[], standby:'m6', funcs:[], size:'normal', region:'cn', cost:'balance'
+};
+
+function bindChips(){
+  document.querySelectorAll('.chips').forEach(function(box){
+    var type = box.dataset.type, multi = box.dataset.multi === '1';
+    box.querySelectorAll('.chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        var v = chip.dataset.v;
+        if(multi){
+          chip.classList.toggle('on');
+          var arr = box.querySelectorAll('.chip.on');
+          state[type] = Array.prototype.map.call(arr, function(c){return c.dataset.v;});
+        } else {
+          box.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+          chip.classList.add('on');
+          state[type] = v;
+        }
+        render();
+      });
+    });
+  });
+}
+
+function answers(){
+  var f = state.funcs;
+  return {
+    install: state.install, scenarios: state.scenarios, standby: state.standby,
+    tamper: f.indexOf('tamper')>=0, realtime: f.indexOf('realtime')>=0, wifi: f.indexOf('wifi')>=0,
+    relay: f.indexOf('relay')>=0, acc: f.indexOf('acc')>=0, sos: f.indexOf('sos')>=0, mic: f.indexOf('mic')>=0,
+    size: state.size, region: state.region, cost: state.cost
+  };
+}
+
+var current = null;
+
+function render(){
+  var a = answers();
+  var r = recommend(a);
+  current = {a:a, r:r, shown:r.best};
+  var b = r.best;
+  document.getElementById('rName').textContent = b.model.name;
+  document.getElementById('rSub').textContent = TYPE_CN[b.model.type] + ' · ' + b.model.cap + ' · ' + b.model.dims;
+  var pct = Math.max(8, Math.min(99, Math.round(b.score / 130 * 100)));
+  document.getElementById('rBar').style.width = pct + '%';
+  document.getElementById('rScore').textContent = '匹配度 ' + pct + ' / 100';
+
+  var warn = '';
+  if(r.noPerfect && b.hard.length){
+    warn = '<div class="warnbox"><b>客户需求存在冲突</b><br>' + b.hard.join('；') + '<br>以下型号只能满足部分条件，建议与客户确认优先级后取舍。</div>';
+  } else if(r.noPerfect){
+    warn = '<div class="warnbox"><b>未找到完全匹配的型号</b><br>下方为最接近的方案，建议与客户确认取舍。</div>';
+  }
+  document.getElementById('rWarn').innerHTML = warn;
+
+  var hits = b.hits.slice(0, 6).map(function(h){ return '<li class="ok">' + h + '</li>'; }).join('');
+  document.getElementById('rHits').innerHTML = hits || '<li class="ok">基础参数满足客户条件</li>';
+  var gaps = b.gaps.slice(0, 5).map(function(g){ return '<li class="warn">' + g + '</li>'; }).join('');
+  document.getElementById('rGaps').innerHTML = gaps || '<li class="none">无明显短板</li>';
+
+  var m = b.model;
+  document.getElementById('rSpec').innerHTML =
+    '<tr><td>电池</td><td>' + m.cap + (m.dry ? '（可更换）' : '') + '</td></tr>' +
+    '<tr><td>尺寸</td><td>' + m.dims + '</td></tr>' +
+    '<tr><td>定位</td><td>' + (m.wifi ? 'GPS/BDS/GLONASS + WiFi + LBS' : 'GPS/BDS/GLONASS + LBS') + '</td></tr>' +
+    '<tr><td>制式</td><td>' + (m.id.indexOf('G02')===0 ? 'GPRS（文档另标 CAT1，需确认）' : '4G-LTE-CAT1') + '</td></tr>' +
+    '<tr><td>供电</td><td>' + (m.type==='wired' ? '9~90VDC 车载取电' : (m.dry ? '干电池' : '内置锂电（无线充电）')) + '</td></tr>' +
+    '<tr><td>频段</td><td>' + m.bands + '</td></tr>' +
+    '<tr><td>协议/更新率</td><td>' + m.proto + ' · ' + m.rate + 'Hz</td></tr>' +
+    '<tr><td>断油断电</td><td>' + (m.relay ? '支持' : '不支持') + '</td></tr>' +
+    '<tr><td>SOS/语音</td><td>' + (m.sos ? '支持 SOS' : '不支持 SOS') + ' / ' + (m.mic === 'export' ? '语音仅出口支持' : (m.mic ? '支持语音' : '无语音')) + '</td></tr>';
+
+  document.getElementById('rAlts').innerHTML = r.alts.map(function(x){
+    return '<div class="alt" data-id="' + x.model.id + '"><b>' + x.model.name + '</b><span>' +
+           (Math.round(x.score/130*100)) + '%</span></div>';
+  }).join('') || '<div class="alt">无其他可用型号</div>';
+
+  document.querySelectorAll('.alt[data-id]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var x = r.all.filter(function(y){ return y.model.id === el.dataset.id; })[0];
+      if(x){ showDetail(x); }
+    });
+  });
+}
+
+function showDetail(x){
+  var b = x;
+  if(current){ current.shown = x; }
+  document.getElementById('rName').textContent = b.model.name;
+  document.getElementById('rSub').textContent = TYPE_CN[b.model.type] + ' · ' + b.model.cap + ' · ' + b.model.dims;
+  var pct = Math.max(8, Math.min(99, Math.round(b.score / 130 * 100)));
+  document.getElementById('rBar').style.width = pct + '%';
+  document.getElementById('rScore').textContent = '匹配度 ' + pct + ' / 100';
+  document.getElementById('rHits').innerHTML = b.hits.map(function(h){ return '<li class="ok">' + h + '</li>'; }).join('') || '<li class="ok">基础参数满足</li>';
+  document.getElementById('rGaps').innerHTML = b.gaps.map(function(g){ return '<li class="warn">' + g + '</li>'; }).join('') || '<li class="none">无明显短板</li>';
+  var m = b.model;
+  document.getElementById('rSpec').innerHTML =
+    '<tr><td>电池</td><td>' + m.cap + (m.dry ? '（可更换）' : '') + '</td></tr>' +
+    '<tr><td>尺寸</td><td>' + m.dims + '</td></tr>' +
+    '<tr><td>定位</td><td>' + (m.wifi ? 'GPS/BDS/GLONASS + WiFi + LBS' : 'GPS/BDS/GLONASS + LBS') + '</td></tr>' +
+    '<tr><td>制式</td><td>' + (m.id.indexOf('G02')===0 ? 'GPRS（文档另标 CAT1，需确认）' : '4G-LTE-CAT1') + '</td></tr>' +
+    '<tr><td>供电</td><td>' + (m.type==='wired' ? '9~90VDC 车载取电' : (m.dry ? '干电池' : '内置锂电（无线充电）')) + '</td></tr>' +
+    '<tr><td>频段</td><td>' + m.bands + '</td></tr>' +
+    '<tr><td>协议/更新率</td><td>' + m.proto + ' · ' + m.rate + 'Hz</td></tr>' +
+    '<tr><td>断油断电</td><td>' + (m.relay ? '支持' : '不支持') + '</td></tr>' +
+    '<tr><td>SOS/语音</td><td>' + (m.sos ? '支持 SOS' : '不支持 SOS') + ' / ' + (m.mic === 'export' ? '语音仅出口支持' : (m.mic ? '支持语音' : '无语音')) + '</td></tr>';
+  document.getElementById('rWarn').innerHTML = b.hard.length ? '<div class="warnbox"><b>该型号不满足</b><br>' + b.hard.join('；') + '</div>' : '';
+}
+
+function summaryCN(){
+  var a = current.a, b = current.shown || current.r.best, m = b.model;
+  var needs = [];
+  needs.push(LABELS.install[a.install]);
+  if(a.scenarios.length) needs.push(a.scenarios.map(function(s){return LABELS.scenario[s];}).join('/'));
+  needs.push('待机' + LABELS.standby[a.standby]);
+  needs.push(LABELS.region[a.region] + '使用');
+  if(a.funcs.length) needs.push('需要' + a.funcs.map(function(f){return LABELS.func[f];}).join('、'));
+  var t = '【推荐型号】' + m.name + '（' + TYPE_CN[m.type] + '，' + m.cap + '）\n';
+  t += '【客户需求】' + needs.join('；') + '\n';
+  t += '【推荐理由】' + (b.hits.join('；') || '基础参数满足需求') + '\n';
+  if(m.note) t += '【备注】' + m.note + '\n';
+  if(b.gaps.length) t += '【需确认】' + b.gaps.join('；') + '\n';
+  if(current.r.alts.length) t += '【备选】' + current.r.alts.map(function(x){return x.model.name;}).join(' / ');
+  return t;
+}
+
+function summaryEN(){
+  var a = current.a, b = current.shown || current.r.best, m = b.model;
+  var inst = {any:'no preference', wired:'wired to vehicle power', battery:'standalone battery', dry:'replaceable dry battery'}[a.install];
+  var reg = {cn:'China', eu:'Europe', us:'Americas', me:'Middle East / Africa'}[a.region];
+  var std = {m1:'about 1 month', m3:'2-3 months', m6:'about 6 months', y1:'1 year+', y3:'2-3 years (periodic report only)'}[a.standby];
+  var t = 'Recommended model: ' + m.name + ' (' + m.cap + ', ' + m.dims + ', ' + m.bands + ')\n';
+  t += 'Installation: ' + inst + ' | Region: ' + reg + ' | Standby target: ' + std + '\n';
+  t += 'Why: ' + (b.hits.join('; ') || 'meets the base requirement') + '\n';
+  t += 'Notes: ' + (b.gaps.join('; ') || 'no major gap');
+  return t;
+}
+
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  setTimeout(function(){ el.classList.remove('on'); }, 1400);
+}
+
+function copyText(txt, msg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast(msg); }, function(){ fallback(txt, msg); });
+  } else { fallback(txt, msg); }
+}
+function fallback(txt, msg){
+  var ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast(msg); }catch(e){ toast('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+function buildCompare(){
+  var rows = [
+    ['类型', function(m){ return TYPE_CN[m.type]; }],
+    ['电池', function(m){ return m.cap; }],
+    ['尺寸', function(m){ return m.dims; }],
+    ['WiFi', function(m){ return m.wifi ? '●' : '—'; }],
+    ['拆机报警', function(m){ return m.tamper ? '●' : '—'; }],
+    ['震动/实时', function(m){ return m.vib ? '●' : '—'; }],
+    ['断油断电', function(m){ return m.relay ? '●' : '—'; }],
+    ['ACC', function(m){ return m.acc ? '●' : '—'; }],
+    ['SOS', function(m){ return m.sos ? '●' : '—'; }],
+    ['语音', function(m){ return m.mic === 'export' ? '仅出口' : (m.mic ? '●' : '—'); }],
+    ['协议/更新率', function(m){ return m.proto + ' / ' + m.rate + 'Hz'; }],
+    ['频段', function(m){ return m.bands; }]
+  ];
+  var html = '<table class="cmp"><thead><tr><th>项目</th>' +
+    MODELS.map(function(m){ return '<th>' + m.name + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(r){
+    html += '<tr><td><b>' + r[0] + '</b></td>' + MODELS.map(function(m){ return '<td>' + r[1](m) + '</td>'; }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('cmpWrap').innerHTML = html;
+}
+
+document.getElementById('btnCopy').addEventListener('click', function(){ copyText(summaryCN(), '中文结论已复制'); });
+document.getElementById('btnCopyEn').addEventListener('click', function(){ copyText(summaryEN(), 'EN summary copied'); });
+document.getElementById('btnReset').addEventListener('click', function(){
+  document.querySelectorAll('.chips').forEach(function(box){
+    box.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+    var d = box.querySelector('.chip');
+    if(box.dataset.type === 'install' || box.dataset.type === 'region' || box.dataset.type === 'cost'){
+      d.classList.add('on');
+    }
+    if(box.dataset.type === 'standby'){
+      box.querySelector('[data-v="m6"]').classList.add('on');
+    }
+  });
+  state = { install:'any', scenarios:[], standby:'m6', funcs:[], size:'normal', region:'cn', cost:'balance' };
+  var sizeBox = document.querySelector('.chips[data-type="size"]');
+  sizeBox.querySelector('[data-v="normal"]').classList.add('on');
+  render();
+});
+
+bindChips();
+buildCompare();
+render();
+</script>
+</body>
+</html>
